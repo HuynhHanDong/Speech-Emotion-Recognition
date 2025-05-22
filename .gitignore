@@ -1,0 +1,6 @@
+# Ignore files
+*.pdf
+
+# Ignore folders
+dataset/
+Solutions/
