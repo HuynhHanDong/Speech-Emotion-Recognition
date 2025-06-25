@@ -2,5 +2,13 @@
 *.pdf
 
 # Ignore folders
-dataset/
+venv/
+RAVDESS/
+CREMA-D/
+SAVEE/
+TESS/
+
+QuocAnh.ipynb
+
 Solutions/
+mini_project/
