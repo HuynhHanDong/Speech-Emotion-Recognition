@@ -46,38 +46,38 @@ class Custom_3D_CNN(nn.Module):
         super(Custom_3D_CNN, self).__init__()
 
         self.features = nn.Sequential(
-            ResidualDepthwisePointwise3D(1, 64),
+            ResidualDepthwisePointwise3D(1, 32),
             nn.MaxPool3d((1, 2, 2)),
+
+            ResidualDepthwisePointwise3D(32, 64),
+            nn.MaxPool3d((1, 2, 2)),
+            nn.Dropout3d(0.3),
 
             ResidualDepthwisePointwise3D(64, 128),
             nn.MaxPool3d((1, 2, 2)),
-            nn.Dropout3d(0.1),
+            nn.Dropout3d(0.3),
 
-            ResidualDepthwisePointwise3D(128, 256),
+            ResidualDepthwisePointwise3D(128, 64),
             nn.MaxPool3d((1, 2, 2)),
-            nn.Dropout3d(0.1),
+            nn.Dropout3d(0.3),
 
-            ResidualDepthwisePointwise3D(256, 128),
+            ResidualDepthwisePointwise3D(64, 64),
             nn.MaxPool3d((1, 2, 2)),
-            nn.Dropout3d(0.1),
-
-            ResidualDepthwisePointwise3D(128, 128),
-            nn.MaxPool3d((1, 2, 2)),
-            nn.Dropout3d(0.1),
+            nn.Dropout3d(0.3),
         )
 
-        self.global_pool = nn.AdaptiveAvgPool3d((1,1,1))
+        self.global_pool = nn.AdaptiveAvgPool3d((1, 1, 1))
         self.classifier = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(128, 512),
-            nn.ReLU(),
-            nn.BatchNorm1d(512),
-            nn.Dropout(0.3),
-            nn.Linear(512, 256),
+            nn.Linear(64, 256),
             nn.ReLU(),
             nn.BatchNorm1d(256),
-            nn.Dropout(0.3),
-            nn.Linear(256, num_classes),
+            nn.Dropout(0.5),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.BatchNorm1d(128),
+            nn.Dropout(0.5),
+            nn.Linear(128, num_classes),
         )
 
     def forward(self, x):
