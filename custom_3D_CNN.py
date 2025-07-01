@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset
+import math
 '''
 class DepthwisePointwise3D(nn.Module):
     """Standard Depthwise -> Pointwise 3D block."""
@@ -82,7 +83,7 @@ class Custom_3D_CNN(nn.Module):
         x = self.global_pool(x)
         x = self.classifier(x)
         return x
-'''
+-------------------------------------------------------------------
 class SelfAttention3D(nn.Module):
     def __init__(self, in_channels):
         super(SelfAttention3D, self).__init__()
@@ -170,6 +171,121 @@ class Custom_3D_CNN(nn.Module):
         x = self.global_pool(x)
         x = self.classifier(x)
         return x
+'''
+class PositionalEncoding(nn.Module):
+    def __init__(self, embed_dim, max_len=1000):
+        super().__init__()
+        pe = torch.zeros(max_len, embed_dim)
+        position = torch.arange(0, max_len).unsqueeze(1).float()
+        div_term = torch.exp(torch.arange(0, embed_dim, 2).float() * (-math.log(10000.0) / embed_dim))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0)  # (1, max_len, embed_dim)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        return x + self.pe[:, :x.size(1)]
+    
+class TransformerEncoderBlock(nn.Module):
+    def __init__(self, embed_dim, num_heads, dropout=0.1):
+        super().__init__()
+        self.attn = nn.MultiheadAttention(embed_dim, num_heads, dropout=dropout, batch_first=True)
+        self.norm1 = nn.LayerNorm(embed_dim)
+        self.dropout1 = nn.Dropout(dropout)
+
+        self.ffn = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim * 4),
+            nn.ReLU(),
+            nn.Linear(embed_dim * 4, embed_dim)
+        )
+        self.norm2 = nn.LayerNorm(embed_dim)
+        self.dropout2 = nn.Dropout(dropout)
+
+    def forward(self, x):
+        attn_out, _ = self.attn(x, x, x)
+        x = self.norm1(x + self.dropout1(attn_out))
+        ffn_out = self.ffn(x)
+        x = self.norm2(x + self.dropout2(ffn_out))
+        return x
+
+class GlobalAttentionPooling(nn.Module):
+    def __init__(self, embed_dim):
+        super().__init__()
+        self.attn = nn.Sequential(
+            nn.Linear(embed_dim, 1),
+            nn.Tanh()
+        )
+
+    def forward(self, x):
+        weights = self.attn(x)                    # (B, T, 1)
+        weights = F.softmax(weights, dim=1)
+        weighted = x * weights                    # (B, T, D)
+        return weighted.sum(dim=1)                # (B, D)
+
+class Custom_3D_CNN(nn.Module):
+    def __init__(self, num_classes, embed_dim=64, num_heads=8, num_layers=6):
+        super(Custom_3D_CNN, self).__init__()
+        self.cnn = nn.Sequential(
+            nn.Conv3d(1, 32, kernel_size=3, padding=1),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            nn.MaxPool3d((1, 2, 2)),
+
+            nn.Conv3d(32, 64, kernel_size=3, padding=1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            nn.MaxPool3d((1, 2, 2)),
+            nn.Dropout3d(0.3),
+
+            nn.Conv3d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm3d(128),
+            nn.ReLU(),
+            nn.MaxPool3d((1, 2, 2)),
+            nn.Dropout3d(0.3),
+
+            nn.Conv3d(128, 64, kernel_size=3, padding=1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            nn.MaxPool3d((1, 2, 2)),
+            nn.Dropout3d(0.3),
+
+            nn.Conv3d(64, embed_dim, kernel_size=1)  # projection
+        )
+
+        self.pool = nn.AdaptiveAvgPool3d((1, None, None))  # preserve spatial grid
+
+        self.pos_enc = PositionalEncoding(embed_dim)
+
+        self.transformer_layers = nn.ModuleList([
+            TransformerEncoderBlock(embed_dim, num_heads, dropout=0.3) for _ in range(num_layers)
+        ])
+
+        self.attn_pool = GlobalAttentionPooling(embed_dim)
+
+        self.classifier = nn.Sequential(
+            nn.Linear(embed_dim, 128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout(0.4),
+            nn.Linear(128, num_classes)
+        )
+
+    def forward(self, x):
+        # x shape: (B, 1, 10, 64, 65)
+        x = self.cnn(x)                        # (B, embed_dim, D, H, W)
+        x = self.pool(x)  # (B, embed_dim, 1, H', W')
+        x = x.squeeze(2)  # (B, embed_dim, H', W')
+        B, C, H, W = x.shape
+        x = x.view(B, C, H * W).permute(0, 2, 1)  # (B, T, embed_dim)
+
+        x = self.pos_enc(x)
+
+        for layer in self.transformer_layers:
+            x = layer(x)
+
+        x = self.attn_pool(x)  # (B, embed_dim)
+        return self.classifier(x)
+
 
 
 class EarlyStopping:
