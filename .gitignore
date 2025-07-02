@@ -1,5 +1,6 @@
 # Ignore files
 *.pdf
+*.png
 
 # Ignore folders
 venv/
@@ -7,8 +8,6 @@ RAVDESS/
 CREMA-D/
 SAVEE/
 TESS/
-
-QuocAnh.ipynb
-
+augmented_data/
 Solutions/
 mini_project/
