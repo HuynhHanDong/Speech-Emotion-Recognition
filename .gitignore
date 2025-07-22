@@ -1,6 +1,5 @@
 # Ignore files
 *.pdf
-*.png
 
 # Ignore folders
 venv/
