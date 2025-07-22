@@ -1,6 +1,5 @@
 # Ignore files
 *.pdf
-*.png
 
 # Ignore folders
 venv/
@@ -8,6 +7,4 @@ RAVDESS/
 CREMA-D/
 SAVEE/
 TESS/
-augmented_data/
-Solutions/
-mini_project/
+EmoDB/
