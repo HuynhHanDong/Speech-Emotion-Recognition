@@ -3,21 +3,17 @@ This is a repository of a project that I worked with my teammates in subject DPL
 
 All contents in this README are parts of our project report.
 
-### Team Members
-- Tran Hoang Tuan Hung (coder)
-- Phan Quoc Anh (coder)
-- Huynh Han Dong (coder)
-- Tran Quoc Huan (report writer)
-- Nguyen Van Anh Duy (report writer)
-- Nguyen Truong Phuc Thinh (report writer)
-
 ## Requirement
 - Python >= 3.9
 - Jupiter Notebook
-- pandas, numpy, matplotlib, seaborn
+- numpy
+- pandas
+- matplotlib
+- seaborn
+- sklearn
 - librosa
-- sklearn, audiomentations
-- tensorflow and CUDA (check ![TF release notes](https://www.tensorflow.org/install/source#gpu) for GPU support version)
+- audiomentations
+- tensorflow and CUDA (check [TF release notes](https://www.tensorflow.org/install/source#gpu) for GPU support version)
 - streamlit >= 1.35.0 (to run the demo app.py)
 
 ## Dataset
@@ -60,7 +56,26 @@ To improve model generalization and simulate real-world audio variability, we au
 Our model architecture is based on a 3D Convolutional Neural Network (3D CNN), which has proven effective in extracting spatial and temporal features from mel-spectrogram representations of audio.
 
 Diagram of the layer flow of our model:
+
 ![Model architecture](model.png)
 
 ## Training Strategy
 The dataset was divided into training, validation, and testing subsets using a 70:15:15 split. The `Adam` optimizer was employed for its adaptive learning rate capabilities and fast convergence. The model was trained using a custom `Focal Loss` function. By fine-tuning class-specific weights, we adapted the loss to reflect the difficulty of each emotion better. This allowed the model to focus more on hard-to-classify examples and helped reduce the overall loss.
+
+## Evaluation
+- Accuracy (main goal)
+- Precision
+- Recall
+- F1-score
+- Confusion matrix
+
+## Demo streamlit app
+Allow user to choose uploading or recording an audio. Show prediction result with confidence score.
+
+# Team Members
+- Tran Hoang Tuan Hung (coder)
+- Phan Quoc Anh (coder)
+- Huynh Han Dong (coder)
+- Tran Quoc Huan (report writer)
+- Nguyen Van Anh Duy (report writer)
+- Nguyen Truong Phuc Thinh (report writer)
